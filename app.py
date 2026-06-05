@@ -235,272 +235,42 @@ def main():
 
     if analyze and (st.session_state.get('selected_image', None) is not None):
       image = st.session_state['selected_image']
-      import io
-      import streamlit as st
-      import tensorflow as tf
-      import numpy as np
-      from PIL import Image
-      from datetime import datetime
-
-
-      # -----------------------------
-      # Configuration & Styling
-      # -----------------------------
-      st.set_page_config(
-        page_title="AI-Powered Concrete Crack Detection System",
-        page_icon="🏗️",
-        layout="wide",
-      )
-
-      # Custom CSS for polished look
-      _CSS = """
-      <style>
-        .app-header {padding: 8px 0 18px 0}
-        .card {background: #ffffff; border-radius: 12px; padding: 18px; box-shadow: 0 6px 18px rgba(15,15,15,0.08);}
-        .muted {color: #6b7280}
-        .uploader {border: 2px dashed rgba(99,102,241,0.08); border-radius: 12px; padding: 12px}
-        .sample-img {border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.06)}
-        .large-flag {font-size: 22px; font-weight: 700}
-        @media (max-width: 600px) {
-        .card {padding: 12px}
-        }
-      </style>
-      """
-
-      st.markdown(_CSS, unsafe_allow_html=True)
-
-
-      # -----------------------------
-      # Utilities and Model Logic
-      # -----------------------------
-
-      @st.cache_resource
-      def load_model(path: str):
-        """Load and cache the Keras model."""
-        try:
-          model = tf.keras.models.load_model(path)
-          return model
-        except Exception as e:
-          st.error(f"Error loading model: {e}")
-          return None
-
-
-      def preprocess_image(image: Image.Image, target_size=(224, 224)) -> np.ndarray:
-        """Resize, normalize and expand dims for model prediction."""
-        img = image.convert("RGB").resize(target_size)
-        arr = np.array(img).astype(np.float32) / 255.0
-        return np.expand_dims(arr, axis=0)
-
-
-      def predict_image(model, image: Image.Image) -> float:
-        """Return model prediction score between 0 and 1.
-        Assumes binary output with higher values indicating 'crack'.
-        """
-        if model is None:
-          raise RuntimeError("Model is not loaded")
-        x = preprocess_image(image)
-        preds = model.predict(x)
-        # handle various output shapes
-        score = float(preds.ravel()[0])
-        return score
-
-
-      def format_timestamp(ts: datetime) -> str:
-        return ts.strftime("%Y-%m-%d %H:%M:%S")
-
-
-      def make_report(img: Image.Image, prediction: float, timestamp: str) -> str:
-        """Create a simple text report for download."""
-        label = "CRACK" if prediction > 0.5 else "NO CRACK"
-        confidence = prediction * 100 if prediction > 0.5 else (1 - prediction) * 100
-        report = (
-          f"AI-Powered Concrete Crack Detection Report\n"
-          f"Generated: {timestamp}\n\n"
-          f"Result: {label}\n"
-          f"Confidence: {confidence:.2f}%\n"
-        )
-        return report
-
-
-      # -----------------------------
-      # App Layout: Sidebar
-      # -----------------------------
-
-      MODEL_PATH = "crack_detection_model.keras"
-      model = load_model(MODEL_PATH)
-
-      with st.sidebar:
-        st.markdown("**Project Overview**")
-        st.write("AI-powered concrete crack detection using MobileNetV2 transfer learning.")
-        st.markdown("---")
-        st.markdown("**How to use**")
-        st.write("1. Upload or select a sample image. 2. Run prediction. 3. Review result and download report.")
-        st.markdown("---")
-        st.markdown("**Supported formats**")
-        st.write("JPG, JPEG, PNG")
-        st.markdown("---")
-        st.markdown("**Model info**")
-        st.write("MobileNetV2 (Transfer Learning)")
-        if model is not None:
-          st.success("Model loaded")
-        else:
-          st.error("Model failed to load")
-        st.markdown("---")
-        st.markdown("**Developer / Student**")
-        st.write("Your Name Here")
-        st.markdown("---")
-        st.markdown("**Accuracy (placeholder)**")
-        st.write("Insert model accuracy here")
-        st.markdown("---")
-        st.markdown("**Dataset**")
-        st.write("Custom concrete crack dataset (train/val/test)")
-
-
-      # -----------------------------
-      # Header
-      # -----------------------------
-
-      st.markdown("""
-      <div class='app-header'>
-        <h1>🏗️ AI-Powered Concrete Crack Detection System</h1>
-        <p class='muted'>A demonstration of MobileNetV2 transfer learning for detecting surface cracks in concrete.</p>
-      </div>
-      """, unsafe_allow_html=True)
-
-
-      # -----------------------------
-      # Main: columns and controls
-      # -----------------------------
-
-      left_col, right_col = st.columns([1, 1])
-
-      with left_col:
-        st.markdown("### Upload or Choose Sample")
-        st.markdown("""<div class='card uploader'>
-        Drag & drop an image, or click to browse.
-        </div>""", unsafe_allow_html=True)
-
-        uploaded_file = st.file_uploader(
-          "",
-          type=["jpg", "jpeg", "png"],
-          accept_multiple_files=False,
-          key="uploader",
-        )
-
-        # Sample images (URLs). Clicking will load them for prediction.
-        st.markdown("### Sample Images")
-        samples = [
-          {
-            "label": "Crack Example",
-            "url": "https://images.unsplash.com/photo-1604908177522-4b0d761f2b1f?w=800&q=80",
-          },
-          {
-            "label": "No Crack Example",
-            "url": "https://images.unsplash.com/photo-1581093588401-3d1a4f36d0c3?w=800&q=80",
-          },
-        ]
-
-        sample_cols = st.columns(len(samples))
-        for i, sample in enumerate(samples):
-          with sample_cols[i]:
-            st.image(sample["url"], caption=sample["label"], use_column_width=True, output_format="PNG")
-            if st.button(f"Use {sample['label']}", key=f"sample_{i}"):
-              # fetch image into memory
-              try:
-                img_bytes = tf.keras.utils.get_file(fname=f"sample_{i}", origin=sample["url"])  # caches locally
-                img = Image.open(img_bytes).convert("RGB")
-                st.session_state["input_image"] = img
-              except Exception:
-                st.error("Could not load sample image")
-
-        st.markdown("---")
-        st.markdown("### Preview")
-        if "input_image" in st.session_state:
-          preview_img = st.session_state["input_image"]
-          st.image(preview_img, caption="Selected Image", use_column_width=True)
-        elif uploaded_file is not None:
+      if not model_loaded:
+        st.error("Model not available. Cannot run prediction.")
+      else:
+        with st.spinner("Analyzing image..."):
           try:
-            preview_img = Image.open(uploaded_file).convert("RGB")
-            st.session_state["input_image"] = preview_img
-            st.image(preview_img, caption="Uploaded Image", use_column_width=True)
-          except Exception:
-            st.error("Could not open uploaded image")
-        else:
-          st.info("No image selected yet.")
+            label, confidence, raw_score = predict_image(model, image)
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Result card
+            if "Crack" in label:
+              color = "#f97316"
+              icon = "⚠️ Crack Detected"
+            else:
+              color = "#16a34a"
+              icon = "✅ No Crack Detected"
 
-        # Manual predict button (useful for sample selection)
-        if st.button("Run Prediction", type="primary"):
-          if "input_image" not in st.session_state:
-            st.warning("Please upload or select an image first.")
-          else:
-            st.session_state["do_predict"] = True
-
-
-      with right_col:
-        st.markdown("### Prediction")
-        prediction_card = st.container()
-
-        # Status & metrics
-        status_col1, status_col2 = st.columns([2, 1])
-        with status_col1:
-          st.markdown("**Model Status**")
-          if model is not None:
-            st.success("MobileNetV2 (Transfer Learning) — Loaded")
-          else:
-            st.error("Model not available")
-        with status_col2:
-          st.metric("Last Prediction", st.session_state.get("last_timestamp", "—"))
-
-        # Prediction execution
-        if st.session_state.get("do_predict", False):
-          img = st.session_state.get("input_image")
-          try:
-            with st.spinner("Analyzing image with the model..."):
-              score = predict_image(model, img)
-              ts = format_timestamp(datetime.now())
-              st.session_state["last_score"] = score
-              st.session_state["last_timestamp"] = ts
-              st.session_state["do_predict"] = False
-
-            # Visual result card
-            with prediction_card:
-              if score > 0.5:
-                # Crack detected
-                st.markdown(f"<div class='card' style='border-left: 6px solid #ff6b6b'>\n  <div class=large-flag>⚠️ Crack Detected</div>\n</div>", unsafe_allow_html=True)
-                confidence = score * 100
-                st.markdown(f"### Confidence: {confidence:.2f}%")
-                st.progress(min(int(confidence), 100))
-                st.metric("Status", "CRACK", delta=f"{confidence:.2f}%")
-              else:
-                st.markdown(f"<div class='card' style='border-left: 6px solid #22c55e'>\n  <div class=large-flag>✅ No Crack Detected</div>\n</div>", unsafe_allow_html=True)
-                confidence = (1 - score) * 100
-                st.markdown(f"### Confidence: {confidence:.2f}%")
-                st.progress(min(int(confidence), 100))
-                st.metric("Status", "NO CRACK", delta=f"{confidence:.2f}%")
+            st.markdown(f"<div class='big-alert' style='background:{color}'> {icon} </div>", unsafe_allow_html=True)
+            st.metric("Confidence", f"{confidence * 100:.2f}%")
+            st.progress(min(int(confidence * 100), 100))
 
             # Downloadable report
-            report_txt = make_report(img, score, ts)
-            st.download_button("Download Report", data=report_txt, file_name=f"crack_report_{ts.replace(' ', '_')}.txt")
+            report_txt = generate_report(label, confidence, raw_score, "MobileNetV2 (transfer learning)", timestamp)
+            st.download_button("Download Report", data=report_txt, file_name=f"crack_report_{timestamp.replace(' ', '_')}.txt")
+
+            # store last prediction
+            st.session_state['last_prediction'] = {
+              'label': label,
+              'confidence': confidence,
+              'raw_score': raw_score,
+              'timestamp': timestamp,
+            }
 
           except Exception as e:
             st.error(f"Prediction failed: {e}")
+    else:
+      st.info("No prediction run yet. Upload or select an image, then click Analyze Image.")
 
-        else:
-          st.info("No prediction run yet. Click 'Run Prediction' or select a sample.")
 
-
-      # -----------------------------
-      # How it works + Footer
-      # -----------------------------
-
-      with st.expander("How it works — Click to expand"):
-        st.write(
-          "1. Upload an image of a concrete surface.\n"
-          "2. The image is resized and normalized for MobileNetV2.\n"
-          "3. MobileNetV2 is used as a feature extractor with a lightweight classifier on top.\n"
-          "4. The model outputs a probability; thresholds determine 'crack' vs 'no crack'.\n"
-          "5. Results include confidence, timestamp, and a downloadable report."
-        )
-
-      st.markdown("---")
-      st.markdown("Made for demonstration — Final Year Project. © Your University")
+if __name__ == "__main__":
+  main()
