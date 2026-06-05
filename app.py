@@ -37,9 +37,9 @@ def predict(model, img: Image.Image):
 def main():
     st.title("Concrete Crack Detection")
 
-    # Load model (cached). Path fixed as requested.
+    # Load model (cached). Using the available .h5 model file.
     try:
-        model = load_model("model.keras")
+        model = load_model("crack_detection_model.h5")
     except Exception as e:
         st.error(f"Failed to load model: {e}")
         return
