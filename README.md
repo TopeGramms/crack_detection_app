@@ -2,7 +2,7 @@
 
 A CNN-based binary image classification system that detects cracks in concrete surfaces using MobileNetV2 and TensorFlow. Trained on 40,000 augmented images with 99.5% validation accuracy.
 
-**Live Demo:** [concrete-crack-detection.streamlit.app](https://concrete-crack-detection.streamlit.app)
+**Live Demo:** [Concrete Crack Detection v2 on Streamlit](https://crackdetectionapp-lbbvqkcubbbkwgkppjtbck.streamlit.app/)
 
 ---
 
@@ -28,6 +28,8 @@ The model is deployed as an interactive web application using Streamlit for easy
 
 ## 📊 Model Performance
 
+### Performance Metrics
+
 | Metric | Value |
 |--------|-------|
 | Training Data | 40,000 images (20,000 cracked + 20,000 normal) |
@@ -39,6 +41,10 @@ The model is deployed as an interactive web application using Streamlit for easy
 | F1-Score | 0.99 |
 | ROC-AUC | 1.00 |
 | Decision Threshold | 0.9334 (optimized via ROC curve) |
+
+### Training & Validation Curves
+
+![Training Curves](training_curves.jpg)
 
 ### Data Augmentation Applied
 - Rotation (±40°)
@@ -53,7 +59,7 @@ The model is deployed as an interactive web application using Streamlit for easy
 
 The model is deployed on **Streamlit Cloud** at:
 ```
-https://concrete-crack-detection.streamlit.app
+https://crackdetectionapp-lbbvqkcubbbkwgkppjtbck.streamlit.app/
 ```
 
 Simply upload an image and get instant crack detection with confidence scores.
@@ -80,7 +86,7 @@ concrete-crack-detection/
 
 1. **Clone the repo:**
    ```bash
-   git clone https://github.com/TopeGramms/concrete-crack-detection.git
+   git clone https://github.com/topegramms/concrete-crack-detection.git
    cd concrete-crack-detection
    ```
 
